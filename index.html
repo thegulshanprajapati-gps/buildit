@@ -17,10 +17,26 @@
         .font-heading-playfair { font-family: 'Playfair Display', serif; }
         .font-heading-montserrat { font-family: 'Montserrat', sans-serif; }
         .font-heading-merriweather { font-family: 'Merriweather', serif; }
+
+        #resume-printable-area {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2), 0 3px 12px rgba(15, 23, 42, 0.08);
+            border-radius: 3px;
+        }
+
+        #resume-canvas-inner {
+            box-sizing: border-box;
+            min-height: 297mm;
+        }
+
+        @page { size: A4 portrait; margin: 0; }
         
         @media print {
             body { background: white !important; }
             .no-print { display: none !important; }
+            #resume-printable-area { box-shadow: none; border-radius: 0; }
         }
     </style>
 </head>
@@ -381,7 +397,13 @@
                 </div>
 
                 <!-- Printable Resume Canvas Container -->
-                <div class="flex justify-center bg-slate-200 p-2 sm:p-6 rounded-2xl overflow-x-auto">
+                <div class="flex flex-col items-center bg-[radial-gradient(#cbd5e1_0.7px,transparent_0.7px)] [background-size:14px_14px] bg-slate-100 p-3 sm:p-8 rounded-2xl overflow-x-auto border border-slate-200">
+                    <div class="w-full max-w-[210mm] flex justify-between items-center px-1 pb-3 text-[10px] font-semibold tracking-[0.18em] uppercase text-slate-500">
+                        <span>Resume Preview</span>
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white/80 px-2.5 py-1 text-slate-700 tracking-normal">
+                            <i class="fa-regular fa-file-lines text-indigo-600"></i> A4 - Portrait
+                        </span>
+                    </div>
                     <div id="resume-printable-area" class="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-lg text-slate-800 flex flex-col justify-between">
                         <!-- Dynamic Resume Render Output inserted via JS -->
                         <div id="resume-canvas-inner" class="p-10 flex-grow flex flex-col justify-between">
@@ -440,6 +462,16 @@
 
             toast.classList.remove('hidden');
             setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
         }
 
         function setCareerStatus(status) {
@@ -556,19 +588,7 @@
         }
 
         function validateStep1() {
-            const name = document.getElementById('fullName').value.trim();
-            const job = document.getElementById('jobTitle').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const github = document.getElementById('github').value.trim();
-            const linkedin = document.getElementById('linkedin').value.trim();
-            const summary = document.getElementById('summary').value.trim();
-
-            if (!name || !job || !email || !phone || !github || !linkedin || !summary) {
-                showToast("Please fill all required fields in Step 1 (GitHub and LinkedIn are mandatory).", "error");
-                return false;
-            }
-            return true;
+            return document.getElementById('form-step-1').reportValidity();
         }
 
         function nextStep(step) {
@@ -632,32 +652,33 @@
             const container = document.getElementById('resume-canvas-inner');
 
             // Collect form values
-            const name = document.getElementById('fullName').value.trim() || "Rahul Sharma";
-            const jobTitle = document.getElementById('jobTitle').value.trim() || "Full Stack Developer";
-            const email = document.getElementById('email').value.trim() || "rahul@example.com";
-            const phone = document.getElementById('phone').value.trim() || "+91 98765 43210";
-            const github = document.getElementById('github').value.trim() || "github.com/rahul";
-            const linkedin = document.getElementById('linkedin').value.trim() || "linkedin.com/in/rahul";
-            const location = document.getElementById('location').value.trim() || "New Delhi, India";
-            const summary = document.getElementById('summary').value.trim() || "Passionate engineer...";
-            const dob = document.getElementById('dob').value;
+            const name = escapeHtml(document.getElementById('fullName').value.trim() || "Your Name");
+            const jobTitle = escapeHtml(document.getElementById('jobTitle').value.trim() || "Professional Title");
+            const email = escapeHtml(document.getElementById('email').value.trim());
+            const phone = escapeHtml(document.getElementById('phone').value.trim());
+            const github = escapeHtml(document.getElementById('github').value.trim());
+            const linkedin = escapeHtml(document.getElementById('linkedin').value.trim());
+            const location = escapeHtml(document.getElementById('location').value.trim());
+            const summary = escapeHtml(document.getElementById('summary').value.trim());
+            const dob = escapeHtml(document.getElementById('dob').value);
 
             // Skills, Hobbies, Languages
-            const skills = document.getElementById('skillsInput').value.split(',').map(s => s.trim()).filter(Boolean);
-            const hobbies = document.getElementById('hobbiesInput').value.split(',').map(s => s.trim()).filter(Boolean);
-            const languages = document.getElementById('languagesInput').value.split(',').map(s => s.trim()).filter(Boolean);
+            const skills = document.getElementById('skillsInput').value.split(',').map(s => escapeHtml(s.trim())).filter(Boolean);
+            const hobbies = document.getElementById('hobbiesInput').value.split(',').map(s => escapeHtml(s.trim())).filter(Boolean);
+            const languages = document.getElementById('languagesInput').value.split(',').map(s => escapeHtml(s.trim())).filter(Boolean);
 
             // Educations
             const eduItems = document.querySelectorAll('.edu-item');
             let educations = [];
             eduItems.forEach(item => {
-                educations.push({
-                    degree: item.querySelector('.edu-degree').value || "B.Tech",
-                    school: item.querySelector('.edu-school').value || "University",
-                    year: item.querySelector('.edu-year').value || "2026",
-                    gpa: item.querySelector('.edu-gpa').value || "9.0",
-                    coursework: item.querySelector('.edu-coursework').value || ""
-                });
+                const education = {
+                    degree: escapeHtml(item.querySelector('.edu-degree').value.trim()),
+                    school: escapeHtml(item.querySelector('.edu-school').value.trim()),
+                    year: escapeHtml(item.querySelector('.edu-year').value.trim()),
+                    gpa: escapeHtml(item.querySelector('.edu-gpa').value.trim()),
+                    coursework: escapeHtml(item.querySelector('.edu-coursework').value.trim())
+                };
+                if (Object.values(education).some(Boolean)) educations.push(education);
             });
 
             // Certifications
@@ -665,10 +686,11 @@
             let certs = [];
             certItems.forEach(item => {
                 certs.push({
-                    name: item.querySelector('.cert-name').value || "",
-                    issuer: item.querySelector('.cert-issuer').value || ""
+                    name: escapeHtml(item.querySelector('.cert-name').value.trim()),
+                    issuer: escapeHtml(item.querySelector('.cert-issuer').value.trim())
                 });
             });
+            certs = certs.filter(cert => cert.name || cert.issuer);
 
             // Experiences
             let experiences = [];
@@ -676,12 +698,13 @@
                 const expItems = document.querySelectorAll('.exp-item');
                 expItems.forEach(item => {
                     experiences.push({
-                        company: item.querySelector('.exp-company').value || "Company",
-                        role: item.querySelector('.exp-role').value || "Role",
-                        duration: item.querySelector('.exp-duration').value || "2024 - Present",
-                        desc: item.querySelector('.exp-desc').value || ""
+                        company: escapeHtml(item.querySelector('.exp-company').value.trim()),
+                        role: escapeHtml(item.querySelector('.exp-role').value.trim()),
+                        duration: escapeHtml(item.querySelector('.exp-duration').value.trim()),
+                        desc: escapeHtml(item.querySelector('.exp-desc').value.trim())
                     });
                 });
+                experiences = experiences.filter(experience => Object.values(experience).some(Boolean));
             }
 
             // Photo HTML snippet (omitted completely if not uploaded)
@@ -1068,1105 +1091,23 @@
         }
 
         function downloadPDF() {
-            const element = document.getElementById('resume-printable-area');
-            const fullName = document.getElementById('fullName').value.trim() || "Resume";
-            const opt = {
-                margin:       0,
-                filename:     `${fullName.replace(/\s+/g, '_')}_Resume.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            showToast("Generating PDF download...");
-            html2pdf().from(element).set(opt).save().then(() => {
-                showToast("Resume downloaded successfully!");
-            }).catch(err => {
-                console.error(err);
-                showToast("Error generating PDF. Trying print dialog...", "error");
-                window.print();
-            });
-        }
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Resume Builder & PDF Exporter</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&family=Montserrat:wght@500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf.js for robust PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        .font-sans-custom { font-family: 'Inter', sans-serif; }
-        .font-heading-playfair { font-family: 'Playfair Display', serif; }
-        .font-heading-montserrat { font-family: 'Montserrat', sans-serif; }
-        .font-heading-merriweather { font-family: 'Merriweather', serif; }
-        
-        @media print {
-            body { background: white !important; }
-            .no-print { display: none !important; }
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 h-full flex flex-col justify-between font-sans-custom">
-
-    <!-- Top Header -->
-    <header class="bg-slate-900 text-white shadow-md py-4 px-6 no-print">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-file-invoice text-indigo-400 text-2xl"></i>
-                <h1 class="text-xl font-bold tracking-tight">ResuMake <span class="text-indigo-400 font-light text-sm">| Pro Builder</span></h1>
-            </div>
-            <div id="step-indicator" class="text-sm font-medium bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                Step 1 of 6: Personal Info & Links
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8">
-
-        <!-- Progress Bar -->
-        <div class="mb-8 no-print max-w-3xl mx-auto">
-            <div class="flex justify-between mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider overflow-x-auto space-x-2">
-                <span id="lbl-1" class="text-indigo-600 font-bold whitespace-nowrap">1. Info</span>
-                <span id="lbl-2" class="whitespace-nowrap">2. Status</span>
-                <span id="lbl-3" class="whitespace-nowrap">3. Education</span>
-                <span id="lbl-4" class="whitespace-nowrap">4. Extra</span>
-                <span id="lbl-5" class="whitespace-nowrap">5. Photo</span>
-                <span id="lbl-6" class="whitespace-nowrap">6. Templates & Preview</span>
-            </div>
-            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div id="progress-bar" class="bg-indigo-600 h-full w-[16.6%] transition-all duration-300"></div>
-            </div>
-        </div>
-
-        <!-- Notification Toast -->
-        <div id="toast" class="hidden fixed top-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 transition-opacity duration-300">
-            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
-            <span id="toast-msg" class="text-sm font-medium">Notification message</span>
-        </div>
-
-        <!-- FORM & PREVIEW WRAPPER -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-            
-            <!-- STEP 1: Personal Info & Links (GitHub & LinkedIn Required) -->
-            <section id="step-1" class="p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4">
-                    <h2 class="text-2xl font-bold text-slate-900">Personal Information & Professional Links</h2>
-                    <p class="text-sm text-slate-500 mt-1">Enter your contact info. GitHub and LinkedIn profile links are mandatory.</p>
-                </div>
-
-                <form id="form-step-1" class="space-y-4" onsubmit="event.preventDefault();">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Full Name *</label>
-                            <input type="text" id="fullName" required placeholder="e.g. Rahul Sharma" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Target Job Title *</label>
-                            <input type="text" id="jobTitle" required placeholder="e.g. Full Stack Developer" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address *</label>
-                            <input type="email" id="email" required placeholder="rahul@example.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number *</label>
-                            <input type="tel" id="phone" required placeholder="+91 98765 43210" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">GitHub Profile URL *</label>
-                            <input type="url" id="github" required placeholder="https://github.com/username" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">LinkedIn Profile URL *</label>
-                            <input type="url" id="linkedin" required placeholder="https://linkedin.com/in/username" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Location (City, Country)</label>
-                            <input type="text" id="location" placeholder="New Delhi, India" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Professional Summary *</label>
-                        <textarea id="summary" rows="3" required placeholder="Write a short pitch about yourself..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"></textarea>
-                    </div>
-                </form>
-
-                <div class="flex justify-end pt-4 border-t">
-                    <button type="button" onclick="nextStep(1)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <span>Next: Status</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- STEP 2: Career Status (Fresher or Experienced) -->
-            <section id="step-2" class="hidden p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4">
-                    <h2 class="text-2xl font-bold text-slate-900">Career Status</h2>
-                    <p class="text-sm text-slate-500 mt-1">Select whether you are a Fresher or have Work Experience.</p>
-                </div>
-
-                <div class="space-y-6">
-                    <!-- Radio Toggle Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label class="cursor-pointer border-2 rounded-2xl p-5 flex items-center space-x-4 hover:border-indigo-500 transition-all" id="card-fresher" onclick="setCareerStatus('fresher')">
-                            <input type="radio" name="careerStatus" value="fresher" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" checked>
-                            <div>
-                                <span class="block font-bold text-slate-900 text-lg">Fresher</span>
-                                <span class="text-xs text-slate-500">Just graduated or starting out. Requires Date of Birth.</span>
-                            </div>
-                        </label>
-                        <label class="cursor-pointer border-2 rounded-2xl p-5 flex items-center space-x-4 hover:border-indigo-500 transition-all" id="card-experienced" onclick="setCareerStatus('experienced')">
-                            <input type="radio" name="careerStatus" value="experienced" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
-                            <div>
-                                <span class="block font-bold text-slate-900 text-lg">Experienced</span>
-                                <span class="text-xs text-slate-500">Has professional work history and employment background.</span>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- Fresher Dynamic Field (DOB) -->
-                    <div id="fresher-fields" class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
-                        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Fresher Details</h3>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Date of Birth (DOB) *</label>
-                            <input type="date" id="dob" class="w-full sm:w-1/2 px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white">
-                        </div>
-                    </div>
-
-                    <!-- Experienced Dynamic Field (Work History) -->
-                    <div id="experienced-fields" class="hidden bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Work Experience</h3>
-                            <button type="button" onclick="addExperienceRow()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1">
-                                <i class="fa-solid fa-plus"></i> <span>Add Job</span>
-                            </button>
-                        </div>
-                        <div id="experience-container" class="space-y-4">
-                            <!-- Dynamic Exp Item -->
-                            <div class="exp-item bg-white p-4 rounded-xl border border-slate-200 space-y-3 relative">
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <input type="text" placeholder="Company Name" class="exp-company px-3 py-2 rounded-lg border text-sm">
-                                    <input type="text" placeholder="Job Title / Role" class="exp-role px-3 py-2 rounded-lg border text-sm">
-                                    <input type="text" placeholder="Duration (e.g. 2023 - Present)" class="exp-duration px-3 py-2 rounded-lg border text-sm">
-                                </div>
-                                <textarea placeholder="Key responsibilities & achievements (bullet points)" class="exp-desc w-full px-3 py-2 rounded-lg border text-sm" rows="2"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between pt-4 border-t">
-                    <button type="button" onclick="goToStep(1)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button type="button" onclick="nextStep(2)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <span>Next: Education</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- STEP 3: Education Customization -->
-            <section id="step-3" class="hidden p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900">Education Background</h2>
-                        <p class="text-sm text-slate-500 mt-1">Provide your academic qualifications and coursework.</p>
-                    </div>
-                    <button type="button" onclick="addEducationRow()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1">
-                        <i class="fa-solid fa-plus"></i> <span>Add Education</span>
-                    </button>
-                </div>
-
-                <div id="education-container" class="space-y-4">
-                    <!-- Default Edu Item -->
-                    <div class="edu-item bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Degree / Course Name *</label>
-                                <input type="text" placeholder="B.Tech in Computer Science" class="edu-degree w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Institution Name *</label>
-                                <input type="text" placeholder="IIT Delhi" class="edu-school w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">Graduation Year *</label>
-                                <input type="text" placeholder="2026" class="edu-year w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1">GPA / Percentage</label>
-                                <input type="text" placeholder="9.2 CGPA / 92%" class="edu-gpa w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Relevant Coursework / Honors</label>
-                            <input type="text" placeholder="Data Structures, Algorithms, Dean's List" class="edu-coursework w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between pt-4 border-t">
-                    <button type="button" onclick="goToStep(2)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button type="button" onclick="nextStep(3)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <span>Next: Additional Sections</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- STEP 4: Additional Sections (Skills, Hobbies, Languages, Certifications) -->
-            <section id="step-4" class="hidden p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4">
-                    <h2 class="text-2xl font-bold text-slate-900">Additional Sections</h2>
-                    <p class="text-sm text-slate-500 mt-1">Add your core skills, hobbies, languages, and certifications.</p>
-                </div>
-
-                <div class="space-y-6">
-                    <!-- Skills -->
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                        <label class="block text-sm font-semibold text-slate-700">Core Skills (Comma separated)</label>
-                        <input type="text" id="skillsInput" placeholder="JavaScript, React, Node.js, Python, Tailwind CSS, Git" class="w-full px-4 py-2.5 rounded-xl border bg-white text-sm">
-                    </div>
-
-                    <!-- Hobbies -->
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                        <label class="block text-sm font-semibold text-slate-700">Hobbies & Interests (Comma separated)</label>
-                        <input type="text" id="hobbiesInput" placeholder="Open Source Contributor, Chess, Photography, Technical Blogging" class="w-full px-4 py-2.5 rounded-xl border bg-white text-sm">
-                    </div>
-
-                    <!-- Languages -->
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                        <label class="block text-sm font-semibold text-slate-700">Languages Known (Comma separated)</label>
-                        <input type="text" id="languagesInput" placeholder="English (Fluent), Hindi (Native), Spanish (Basic)" class="w-full px-4 py-2.5 rounded-xl border bg-white text-sm">
-                    </div>
-
-                    <!-- Certifications -->
-                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                        <div class="flex justify-between items-center">
-                            <label class="block text-sm font-semibold text-slate-700">Certifications & Awards</label>
-                            <button type="button" onclick="addCertRow()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1">
-                                <i class="fa-solid fa-plus"></i> <span>Add Certification</span>
-                            </button>
-                        </div>
-                        <div id="certifications-container" class="space-y-3">
-                            <div class="cert-item grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-xl border">
-                                <input type="text" placeholder="Certification Name (e.g. AWS Certified Developer)" class="cert-name px-3 py-2 rounded-lg border text-sm">
-                                <input type="text" placeholder="Issuing Org / Year (e.g. Amazon, 2025)" class="cert-issuer px-3 py-2 rounded-lg border text-sm">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between pt-4 border-t">
-                    <button type="button" onclick="goToStep(3)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button type="button" onclick="nextStep(4)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <span>Next: Photo Upload</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- STEP 5: Photo Upload (Optional) -->
-            <section id="step-5" class="hidden p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4">
-                    <h2 class="text-2xl font-bold text-slate-900">Profile Photo Upload (Optional)</h2>
-                    <p class="text-sm text-slate-500 mt-1">Upload a professional photo. If left empty, no photo placeholder will appear in your resume preview.</p>
-                </div>
-
-                <div class="flex flex-col items-center justify-center space-y-6 py-6">
-                    <div class="relative w-40 h-40 rounded-full border-4 border-indigo-100 shadow-inner overflow-hidden bg-slate-100 flex items-center justify-center">
-                        <img id="photo-preview" src="" alt="Profile Preview" class="w-full h-full object-cover hidden">
-                        <div id="photo-placeholder-text" class="text-center p-4 text-slate-400 text-xs">
-                            <i class="fa-solid fa-user text-3xl mb-1"></i>
-                            <p>No photo uploaded</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col items-center space-y-3">
-                        <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-6 py-3 rounded-xl transition-all shadow-sm text-sm flex items-center space-x-2">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            <span>Choose Photo</span>
-                            <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
-                        </label>
-                        <button type="button" onclick="removePhoto()" class="text-rose-600 hover:text-rose-700 text-xs font-semibold">Remove Photo</button>
-                    </div>
-                </div>
-
-                <div class="flex justify-between pt-4 border-t">
-                    <button type="button" onclick="goToStep(4)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button type="button" onclick="nextStep(5)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <span>Next: Preview & Templates</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- STEP 6: Live Preview & Customization Dashboard -->
-            <section id="step-6" class="hidden p-6 sm:p-10 space-y-6">
-                <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900">Choose Template & Custom Color</h2>
-                        <p class="text-sm text-slate-500 mt-1">Select from 6 professional resume templates and pick a custom color theme.</p>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button type="button" onclick="goToStep(5)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-xl transition-all text-sm flex items-center space-x-2">
-                            <i class="fa-solid fa-pen"></i>
-                            <span>Edit Details</span>
-                        </button>
-                        <button type="button" onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                            <i class="fa-solid fa-download"></i>
-                            <span>Download PDF</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Customization Toolbar (Templates & Colors) -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap gap-4 items-center justify-between no-print">
-                    <!-- Template Selector -->
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Template:</span>
-                        <select id="templateSelect" onchange="renderResumePreview()" class="px-3 py-2 rounded-lg border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="1">1. Modern Sidebar (Split)</option>
-                            <option value="2">2. Classic Executive (Traditional)</option>
-                            <option value="3">3. Minimalist Clean (Simple)</option>
-                            <option value="4">4. Creative Split (Header Focus)</option>
-                            <option value="5">5. Bold Header (Corporate)</option>
-                            <option value="6">6. Elegant Corporate (Structured)</option>
-                        </select>
-                    </div>
-
-                    <!-- Color Swatches -->
-                    <div class="flex items-center space-x-3">
-                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Color:</span>
-                        <div class="flex space-x-2">
-                            <button type="button" onclick="setColorTheme('indigo')" class="w-6 h-6 rounded-full bg-indigo-600 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                            <button type="button" onclick="setColorTheme('emerald')" class="w-6 h-6 rounded-full bg-emerald-700 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                            <button type="button" onclick="setColorTheme('slate')" class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                            <button type="button" onclick="setColorTheme('burgundy')" class="w-6 h-6 rounded-full bg-rose-900 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                            <button type="button" onclick="setColorTheme('blue')" class="w-6 h-6 rounded-full bg-blue-700 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                            <button type="button" onclick="setColorTheme('purple')" class="w-6 h-6 rounded-full bg-purple-800 border-2 border-white shadow hover:scale-110 transition-transform"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Printable Resume Canvas Container -->
-                <div class="flex justify-center bg-slate-200 p-2 sm:p-6 rounded-2xl overflow-x-auto">
-                    <div id="resume-printable-area" class="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-lg text-slate-800 flex flex-col justify-between">
-                        <!-- Dynamic Resume Render Output inserted via JS -->
-                        <div id="resume-canvas-inner" class="p-10 flex-grow flex flex-col justify-between">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between pt-4 border-t no-print">
-                    <button type="button" onclick="goToStep(5)" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-all text-sm flex items-center space-x-2">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Previous</span>
-                    </button>
-                    <button type="button" onclick="downloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2 text-sm">
-                        <i class="fa-solid fa-download"></i>
-                        <span>Download as PDF</span>
-                    </button>
-                </div>
-            </section>
-
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="text-center py-6 text-xs text-slate-400 no-print">
-        &copy; 2026 ResuMake Builder. All rights reserved.
-    </footer>
-
-    <!-- JavaScript Application Logic -->
-    <script>
-        let currentStep = 1;
-        let careerStatus = "fresher";
-        let profilePhotoBase64 = "";
-        let currentColor = "indigo"; // default theme
-
-        const colorClasses = {
-            indigo: { primary: "#4f46e5", bgLight: "#e0e7ff", text: "#4f46e5", border: "#c7d2fe" },
-            emerald: { primary: "#047857", bgLight: "#d1fae5", text: "#047857", border: "#a7f3d0" },
-            slate: { primary: "#0f172a", bgLight: "#f1f5f9", text: "#0f172a", border: "#cbd5e1" },
-            burgundy: { primary: "#881337", bgLight: "#ffe4e6", text: "#881337", border: "#fecdd3" },
-            blue: { primary: "#1d4ed8", bgLight: "#dbeafe", text: "#1d4ed8", border: "#bfdbfe" },
-            purple: { primary: "#6b21a8", bgLight: "#f3e8ff", text: "#6b21a8", border: "#e9d5ff" }
-        };
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMsg.textContent = message;
-            if (type === 'success') {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
-            } else {
-                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+            if (typeof html2pdf !== 'function') {
+                showToast("PDF export is unavailable. Check your connection and try again.", "error");
+                return;
             }
 
-            toast.classList.remove('hidden');
-            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
-        }
-
-        function setCareerStatus(status) {
-            careerStatus = status;
-            const fCard = document.getElementById('card-fresher');
-            const eCard = document.getElementById('card-experienced');
-            const fFields = document.getElementById('fresher-fields');
-            const eFields = document.getElementById('experienced-fields');
-
-            if (status === 'fresher') {
-                fCard.className = "cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-2xl p-5 flex items-center space-x-4 transition-all";
-                eCard.className = "cursor-pointer border-2 border-slate-200 rounded-2xl p-5 flex items-center space-x-4 hover:border-indigo-500 transition-all";
-                fFields.classList.remove('hidden');
-                eFields.classList.add('hidden');
-                document.querySelector('input[value="fresher"]').checked = true;
-            } else {
-                eCard.className = "cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-2xl p-5 flex items-center space-x-4 transition-all";
-                fCard.className = "cursor-pointer border-2 border-slate-200 rounded-2xl p-5 flex items-center space-x-4 hover:border-indigo-500 transition-all";
-                eFields.classList.remove('hidden');
-                fFields.classList.add('hidden');
-                document.querySelector('input[value="experienced"]').checked = true;
-            }
-        }
-
-        function addExperienceRow() {
-            const container = document.getElementById('experience-container');
-            const div = document.createElement('div');
-            div.className = "exp-item bg-white p-4 rounded-xl border border-slate-200 space-y-3 relative";
-            div.innerHTML = `
-                <div class="flex justify-end"><button type="button" onclick="this.closest('.exp-item').remove()" class="text-rose-500 hover:text-rose-700 text-xs"><i class="fa-solid fa-trash"></i> Remove</button></div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input type="text" placeholder="Company Name" class="exp-company px-3 py-2 rounded-lg border text-sm">
-                    <input type="text" placeholder="Job Title / Role" class="exp-role px-3 py-2 rounded-lg border text-sm">
-                    <input type="text" placeholder="Duration (e.g. 2023 - Present)" class="exp-duration px-3 py-2 rounded-lg border text-sm">
-                </div>
-                <textarea placeholder="Key responsibilities & achievements (bullet points)" class="exp-desc w-full px-3 py-2 rounded-lg border text-sm" rows="2"></textarea>
-            `;
-            container.appendChild(div);
-        }
-
-        function addEducationRow() {
-            const container = document.getElementById('education-container');
-            const div = document.createElement('div');
-            div.className = "edu-item bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 relative";
-            div.innerHTML = `
-                <div class="flex justify-end"><button type="button" onclick="this.closest('.edu-item').remove()" class="text-rose-500 hover:text-rose-700 text-xs"><i class="fa-solid fa-trash"></i> Remove</button></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Degree / Course Name *</label>
-                        <input type="text" placeholder="Degree Name" class="edu-degree w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Institution Name *</label>
-                        <input type="text" placeholder="College / University" class="edu-school w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Graduation Year *</label>
-                        <input type="text" placeholder="Year" class="edu-year w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">GPA / Percentage</label>
-                        <input type="text" placeholder="GPA / %" class="edu-gpa w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Relevant Coursework / Honors</label>
-                    <input type="text" placeholder="Coursework details" class="edu-coursework w-full px-3 py-2 rounded-xl border bg-white text-sm">
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function addCertRow() {
-            const container = document.getElementById('certifications-container');
-            const div = document.createElement('div');
-            div.className = "cert-item grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-xl border relative";
-            div.innerHTML = `
-                <input type="text" placeholder="Certification Name" class="cert-name px-3 py-2 rounded-lg border text-sm">
-                <div class="flex space-x-2">
-                    <input type="text" placeholder="Issuer / Year" class="cert-issuer w-full px-3 py-2 rounded-lg border text-sm">
-                    <button type="button" onclick="this.closest('.cert-item').remove()" class="text-rose-500 hover:text-rose-700 px-2"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function handlePhotoUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    showToast("Photo size must be less than 5MB.", "error");
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    profilePhotoBase64 = e.target.result;
-                    const prev = document.getElementById('photo-preview');
-                    prev.src = profilePhotoBase64;
-                    prev.classList.remove('hidden');
-                    document.getElementById('photo-placeholder-text').classList.add('hidden');
-                    showToast("Photo uploaded successfully!");
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removePhoto() {
-            profilePhotoBase64 = "";
-            document.getElementById('photo-preview').src = "";
-            document.getElementById('photo-preview').classList.add('hidden');
-            document.getElementById('photo-placeholder-text').classList.remove('hidden');
-            document.getElementById('photoInput').value = "";
-            showToast("Photo removed.");
-        }
-
-        function validateStep1() {
-            const name = document.getElementById('fullName').value.trim();
-            const job = document.getElementById('jobTitle').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const github = document.getElementById('github').value.trim();
-            const linkedin = document.getElementById('linkedin').value.trim();
-            const summary = document.getElementById('summary').value.trim();
-
-            if (!name || !job || !email || !phone || !github || !linkedin || !summary) {
-                showToast("Please fill all required fields in Step 1 (GitHub and LinkedIn are mandatory).", "error");
-                return false;
-            }
-            return true;
-        }
-
-        function nextStep(step) {
-            if (step === 1 && !validateStep1()) return;
-            if (step === 2 && careerStatus === 'fresher') {
-                const dob = document.getElementById('dob').value;
-                if (!dob) {
-                    showToast("Please provide your Date of Birth for fresher status.", "error");
-                    return;
-                }
-            }
-            goToStep(step + 1);
-        }
-
-        function goToStep(step) {
-            if (step === 6) {
-                renderResumePreview();
-            }
-            currentStep = step;
-
-            for (let i = 1; i <= 6; i++) {
-                document.getElementById(`step-${i}`).classList.add('hidden');
-            }
-            document.getElementById(`step-${step}`).classList.remove('hidden');
-
-            // Update Progress Bar
-            const indicator = document.getElementById('step-indicator');
-            const progressBar = document.getElementById('progress-bar');
-            
-            const titles = [
-                "Step 1 of 6: Personal Info & Links",
-                "Step 2 of 6: Career Status",
-                "Step 3 of 6: Education",
-                "Step 4 of 6: Additional Sections",
-                "Step 5 of 6: Photo Upload",
-                "Step 6 of 6: Preview & Templates"
-            ];
-            indicator.textContent = titles[step - 1];
-            progressBar.style.width = `${(step / 6) * 100}%`;
-
-            for (let i = 1; i <= 6; i++) {
-                const lbl = document.getElementById(`lbl-${i}`);
-                if (i === step) {
-                    lbl.className = "text-indigo-600 font-bold whitespace-nowrap";
-                } else {
-                    lbl.className = "text-slate-500 whitespace-nowrap";
-                }
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function setColorTheme(color) {
-            currentColor = color;
             renderResumePreview();
-        }
-
-        function renderResumePreview() {
-            const templateId = document.getElementById('templateSelect').value;
-            const colors = colorClasses[currentColor];
-            const container = document.getElementById('resume-canvas-inner');
-
-            // Collect form values
-            const name = document.getElementById('fullName').value.trim() || "Rahul Sharma";
-            const jobTitle = document.getElementById('jobTitle').value.trim() || "Full Stack Developer";
-            const email = document.getElementById('email').value.trim() || "rahul@example.com";
-            const phone = document.getElementById('phone').value.trim() || "+91 98765 43210";
-            const github = document.getElementById('github').value.trim() || "github.com/rahul";
-            const linkedin = document.getElementById('linkedin').value.trim() || "linkedin.com/in/rahul";
-            const location = document.getElementById('location').value.trim() || "New Delhi, India";
-            const summary = document.getElementById('summary').value.trim() || "Passionate engineer...";
-            const dob = document.getElementById('dob').value;
-
-            // Skills, Hobbies, Languages
-            const skills = document.getElementById('skillsInput').value.split(',').map(s => s.trim()).filter(Boolean);
-            const hobbies = document.getElementById('hobbiesInput').value.split(',').map(s => s.trim()).filter(Boolean);
-            const languages = document.getElementById('languagesInput').value.split(',').map(s => s.trim()).filter(Boolean);
-
-            // Educations
-            const eduItems = document.querySelectorAll('.edu-item');
-            let educations = [];
-            eduItems.forEach(item => {
-                educations.push({
-                    degree: item.querySelector('.edu-degree').value || "B.Tech",
-                    school: item.querySelector('.edu-school').value || "University",
-                    year: item.querySelector('.edu-year').value || "2026",
-                    gpa: item.querySelector('.edu-gpa').value || "9.0",
-                    coursework: item.querySelector('.edu-coursework').value || ""
-                });
-            });
-
-            // Certifications
-            const certItems = document.querySelectorAll('.cert-item');
-            let certs = [];
-            certItems.forEach(item => {
-                certs.push({
-                    name: item.querySelector('.cert-name').value || "",
-                    issuer: item.querySelector('.cert-issuer').value || ""
-                });
-            });
-
-            // Experiences
-            let experiences = [];
-            if (careerStatus === 'experienced') {
-                const expItems = document.querySelectorAll('.exp-item');
-                expItems.forEach(item => {
-                    experiences.push({
-                        company: item.querySelector('.exp-company').value || "Company",
-                        role: item.querySelector('.exp-role').value || "Role",
-                        duration: item.querySelector('.exp-duration').value || "2024 - Present",
-                        desc: item.querySelector('.exp-desc').value || ""
-                    });
-                });
-            }
-
-            // Photo HTML snippet (omitted completely if not uploaded)
-            const photoHtml = profilePhotoBase64 ? `<img src="${profilePhotoBase64}" alt="Photo" class="w-24 h-24 rounded-full object-cover shadow border-2" style="border-color: ${colors.primary};">` : '';
-
-            // Generate HTML based on Template ID
-            let htmlContent = '';
-
-            if (templateId === "1") {
-                // Template 1: Modern Sidebar (Split) - Heading Playfair, Block Montserrat
-                htmlContent = `
-                    <div class="grid grid-cols-3 gap-6 h-full font-sans-custom">
-                        <div class="col-span-1 p-6 text-slate-700 space-y-6" style="background-color: ${colors.bgLight};">
-                            ${photoHtml}
-                            <div>
-                                <h1 class="font-heading-playfair text-2xl font-bold text-slate-900">${name}</h1>
-                                <p class="text-sm font-semibold mt-0.5" style="color: ${colors.primary};">${jobTitle}</p>
-                            </div>
-                            <div class="space-y-2 text-xs text-slate-600">
-                                <p><i class="fa-solid fa-envelope mr-1.5" style="color: ${colors.primary};"></i> ${email}</p>
-                                <p><i class="fa-solid fa-phone mr-1.5" style="color: ${colors.primary};"></i> ${phone}</p>
-                                <p><i class="fa-solid fa-location-dot mr-1.5" style="color: ${colors.primary};"></i> ${location}</p>
-                                <p><i class="fa-brands fa-github mr-1.5" style="color: ${colors.primary};"></i> ${github}</p>
-                                <p><i class="fa-brands fa-linkedin mr-1.5" style="color: ${colors.primary};"></i> ${linkedin}</p>
-                                ${careerStatus === 'fresher' && dob ? `<p><i class="fa-solid fa-cake-candles mr-1.5" style="color: ${colors.primary};"></i> DOB: ${dob}</p>` : ''}
-                            </div>
-                            ${skills.length > 0 ? `
-                                <div>
-                                    <h3 class="font-heading-montserrat text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Core Skills</h3>
-                                    <div class="flex flex-wrap gap-1.5">
-                                        ${skills.map(s => `<span class="bg-white text-slate-700 text-[11px] px-2 py-0.5 rounded shadow-sm font-medium border" style="border-color: ${colors.border};">${s}</span>`).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            ${hobbies.length > 0 ? `
-                                <div>
-                                    <h3 class="font-heading-montserrat text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Hobbies</h3>
-                                    <p class="text-xs text-slate-600">${hobbies.join(', ')}</p>
-                                </div>
-                            ` : ''}
-                            ${languages.length > 0 ? `
-                                <div>
-                                    <h3 class="font-heading-montserrat text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Languages</h3>
-                                    <p class="text-xs text-slate-600">${languages.join(', ')}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="col-span-2 p-6 space-y-6">
-                            <div>
-                                <h3 class="font-heading-montserrat text-sm font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Professional Summary</h3>
-                                <p class="text-xs text-slate-600 leading-relaxed">${summary}</p>
-                            </div>
-                            ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                                <div>
-                                    <h3 class="font-heading-montserrat text-sm font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Work Experience</h3>
-                                    <div class="space-y-3">
-                                        ${experiences.map(e => `
-                                            <div>
-                                                <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                    <span>${e.role} — ${e.company}</span>
-                                                    <span style="color: ${colors.primary};">${e.duration}</span>
-                                                </div>
-                                                <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">${e.desc}</p>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            <div>
-                                <h3 class="font-heading-montserrat text-sm font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Education</h3>
-                                <div class="space-y-3">
-                                    ${educations.map(ed => `
-                                        <div>
-                                            <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                <span>${ed.degree}</span>
-                                                <span style="color: ${colors.primary};">${ed.year}</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600">${ed.school} ${ed.gpa ? `• GPA: ${ed.gpa}` : ''}</p>
-                                            ${ed.coursework ? `<p class="text-[11px] text-slate-500 mt-0.5">Coursework: ${ed.coursework}</p>` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            ${certs.length > 0 ? `
-                                <div>
-                                    <h3 class="font-heading-montserrat text-sm font-bold uppercase tracking-wider pb-1 mb-2 border-b" style="color: ${colors.primary}; border-color: ${colors.border};">Certifications</h3>
-                                    <div class="space-y-1">
-                                        ${certs.map(c => `<p class="text-xs text-slate-700"><strong>${c.name}</strong> — ${c.issuer}</p>`).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            } else if (templateId === "2") {
-                // Template 2: Classic Executive - Heading Merriweather
-                htmlContent = `
-                    <div class="p-8 space-y-6 font-sans-custom">
-                        <div class="text-center border-b pb-6 space-y-2" style="border-color: ${colors.border};">
-                            ${photoHtml ? `<div class="flex justify-center mb-2">${photoHtml}</div>` : ''}
-                            <h1 class="font-heading-merriweather text-3xl font-bold text-slate-900">${name}</h1>
-                            <p class="text-sm font-semibold tracking-wide uppercase" style="color: ${colors.primary};">${jobTitle}</p>
-                            <div class="flex flex-wrap justify-center gap-x-4 text-xs text-slate-600 pt-1">
-                                <span><i class="fa-solid fa-envelope" style="color: ${colors.primary};"></i> ${email}</span>
-                                <span><i class="fa-solid fa-phone" style="color: ${colors.primary};"></i> ${phone}</span>
-                                <span><i class="fa-solid fa-location-dot" style="color: ${colors.primary};"></i> ${location}</span>
-                                <span><i class="fa-brands fa-github" style="color: ${colors.primary};"></i> ${github}</span>
-                                <span><i class="fa-brands fa-linkedin" style="color: ${colors.primary};"></i> ${linkedin}</span>
-                                ${careerStatus === 'fresher' && dob ? `<span>DOB: ${dob}</span>` : ''}
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="font-heading-merriweather text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Professional Summary</h3>
-                            <p class="text-xs text-slate-700 leading-relaxed">${summary}</p>
-                        </div>
-                        ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                            <div>
-                                <h3 class="font-heading-merriweather text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Experience</h3>
-                                <div class="space-y-3">
-                                    ${experiences.map(e => `
-                                        <div>
-                                            <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                <span>${e.role} at ${e.company}</span>
-                                                <span style="color: ${colors.primary};">${e.duration}</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">${e.desc}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div>
-                            <h3 class="font-heading-merriweather text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Education</h3>
-                            <div class="space-y-3">
-                                ${educations.map(ed => `
-                                    <div>
-                                        <div class="flex justify-between text-xs font-bold text-slate-900">
-                                            <span>${ed.degree} — ${ed.school}</span>
-                                            <span style="color: ${colors.primary};">${ed.year}</span>
-                                        </div>
-                                        <p class="text-xs text-slate-600">${ed.gpa ? `GPA: ${ed.gpa}` : ''} ${ed.coursework ? `• ${ed.coursework}` : ''}</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${skills.length > 0 ? `
-                            <div>
-                                <h3 class="font-heading-merriweather text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Skills & Expertise</h3>
-                                <p class="text-xs text-slate-700 font-medium">${skills.join(' • ')}</p>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            } else if (templateId === "3") {
-                // Template 3: Minimalist Clean
-                htmlContent = `
-                    <div class="p-8 space-y-6 font-sans-custom">
-                        <div class="flex justify-between items-start border-b pb-6" style="border-color: ${colors.border};">
-                            <div class="space-y-1">
-                                <h1 class="text-3xl font-bold text-slate-900">${name}</h1>
-                                <p class="text-sm font-medium" style="color: ${colors.primary};">${jobTitle}</p>
-                                <div class="flex flex-wrap gap-x-4 text-xs text-slate-500 pt-2">
-                                    <span>${email}</span> • <span>${phone}</span> • <span>${location}</span>
-                                    <span>GitHub: ${github}</span> • <span>LinkedIn: ${linkedin}</span>
-                                </div>
-                            </div>
-                            ${photoHtml}
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">About Me</h3>
-                            <p class="text-xs text-slate-700 leading-relaxed">${summary}</p>
-                        </div>
-                        ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Work Experience</h3>
-                                <div class="space-y-4">
-                                    ${experiences.map(e => `
-                                        <div>
-                                            <h4 class="text-xs font-bold text-slate-900">${e.role} — <span style="color: ${colors.primary};">${e.company}</span> (${e.duration})</h4>
-                                            <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">${e.desc}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Education</h3>
-                            <div class="space-y-2">
-                                ${educations.map(ed => `
-                                    <div class="flex justify-between text-xs">
-                                        <span class="font-bold text-slate-800">${ed.degree}, ${ed.school}</span>
-                                        <span class="text-slate-500">${ed.year}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${skills.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Skills</h3>
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${skills.map(s => `<span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded font-medium">${s}</span>`).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            } else if (templateId === "4") {
-                // Template 4: Creative Split
-                htmlContent = `
-                    <div class="p-8 space-y-6 font-sans-custom">
-                        <div class="p-6 rounded-2xl text-white flex items-center space-x-6" style="background-color: ${colors.primary};">
-                            ${photoHtml}
-                            <div class="space-y-1">
-                                <h1 class="text-3xl font-bold">${name}</h1>
-                                <p class="text-sm font-light opacity-90">${jobTitle}</p>
-                                <div class="flex flex-wrap gap-x-4 text-xs opacity-80 pt-1">
-                                    <span><i class="fa-solid fa-envelope"></i> ${email}</span>
-                                    <span><i class="fa-solid fa-phone"></i> ${phone}</span>
-                                    <span><i class="fa-brands fa-github"></i> ${github}</span>
-                                    <span><i class="fa-brands fa-linkedin"></i> ${linkedin}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${colors.primary};">Summary</h3>
-                            <p class="text-xs text-slate-600 leading-relaxed">${summary}</p>
-                        </div>
-                        ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${colors.primary};">Experience</h3>
-                                <div class="space-y-3">
-                                    ${experiences.map(e => `
-                                        <div>
-                                            <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                <span>${e.role} at ${e.company}</span>
-                                                <span>${e.duration}</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600 mt-0.5 whitespace-pre-line">${e.desc}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${colors.primary};">Education</h3>
-                            <div class="space-y-2">
-                                ${educations.map(ed => `
-                                    <div class="flex justify-between text-xs font-bold text-slate-900">
-                                        <span>${ed.degree} — ${ed.school} (${ed.year})</span>
-                                        <span>${ed.gpa ? `GPA: ${ed.gpa}` : ''}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${skills.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider mb-2" style="color: ${colors.primary};">Skills</h3>
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${skills.map(s => `<span class="text-xs px-2.5 py-1 rounded font-medium" style="background-color: ${colors.bgLight}; color: ${colors.primary};">${s}</span>`).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            } else if (templateId === "5") {
-                // Template 5: Bold Header Corporate
-                htmlContent = `
-                    <div class="space-y-6 font-sans-custom">
-                        <div class="p-8 border-b-4 text-white space-y-3" style="background-color: ${colors.primary}; border-color: #000;">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h1 class="text-3xl font-bold">${name}</h1>
-                                    <p class="text-sm uppercase tracking-widest font-semibold opacity-90 mt-1">${jobTitle}</p>
-                                </div>
-                                ${photoHtml}
-                            </div>
-                            <div class="flex flex-wrap gap-x-6 text-xs opacity-90 pt-2">
-                                <span><i class="fa-solid fa-envelope"></i> ${email}</span>
-                                <span><i class="fa-solid fa-phone"></i> ${phone}</span>
-                                <span><i class="fa-brands fa-github"></i> ${github}</span>
-                                <span><i class="fa-brands fa-linkedin"></i> ${linkedin}</span>
-                            </div>
-                        </div>
-                        <div class="p-8 space-y-6 pt-0">
-                            <div>
-                                <h3 class="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Profile Summary</h3>
-                                <p class="text-xs text-slate-700 leading-relaxed">${summary}</p>
-                            </div>
-                            ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                                <div>
-                                    <h3 class="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Work Experience</h3>
-                                    <div class="space-y-3">
-                                        ${experiences.map(e => `
-                                            <div>
-                                                <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                    <span>${e.role} — ${e.company}</span>
-                                                    <span>${e.duration}</span>
-                                                </div>
-                                                <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">${e.desc}</p>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            <div>
-                                <h3 class="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Education</h3>
-                                <div class="space-y-2">
-                                    ${educations.map(ed => `
-                                        <div class="flex justify-between text-xs font-bold text-slate-900">
-                                            <span>${ed.degree}, ${ed.school}</span>
-                                            <span>${ed.year}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            ${skills.length > 0 ? `
-                                <div>
-                                    <h3 class="text-sm font-bold uppercase tracking-wider border-b pb-1 mb-2" style="color: ${colors.primary}; border-color: ${colors.border};">Skills</h3>
-                                    <p class="text-xs text-slate-700 font-medium">${skills.join(' • ')}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Template 6: Elegant Corporate
-                htmlContent = `
-                    <div class="p-8 space-y-6 font-sans-custom">
-                        <div class="border-b pb-4 flex justify-between items-center" style="border-color: ${colors.primary};">
-                            <div>
-                                <h1 class="text-3xl font-bold text-slate-900">${name}</h1>
-                                <p class="text-sm font-semibold tracking-wide uppercase mt-0.5" style="color: ${colors.primary};">${jobTitle}</p>
-                            </div>
-                            ${photoHtml}
-                        </div>
-                        <div class="grid grid-cols-2 text-xs text-slate-600 gap-2 border-b pb-4" style="border-color: ${colors.border};">
-                            <div><strong>Email:</strong> ${email}</div>
-                            <div><strong>Phone:</strong> ${phone}</div>
-                            <div><strong>GitHub:</strong> ${github}</div>
-                            <div><strong>LinkedIn:</strong> ${linkedin}</div>
-                        </div>
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1">Summary</h3>
-                            <p class="text-xs text-slate-700 leading-relaxed">${summary}</p>
-                        </div>
-                        ${careerStatus === 'experienced' && experiences.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">Experience</h3>
-                                <div class="space-y-3">
-                                    ${experiences.map(e => `
-                                        <div>
-                                            <div class="flex justify-between text-xs font-bold text-slate-900">
-                                                <span>${e.role} — ${e.company}</span>
-                                                <span style="color: ${colors.primary};">${e.duration}</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">${e.desc}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">Education</h3>
-                            <div class="space-y-2">
-                                ${educations.map(ed => `
-                                    <div class="flex justify-between text-xs font-bold text-slate-900">
-                                        <span>${ed.degree}, ${ed.school} (${ed.year})</span>
-                                        <span>${ed.gpa ? `GPA: ${ed.gpa}` : ''}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${skills.length > 0 ? `
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1">Skills</h3>
-                                <p class="text-xs text-slate-700 font-medium">${skills.join(' • ')}</p>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-
-            container.innerHTML = htmlContent;
-        }
-
-        function downloadPDF() {
             const element = document.getElementById('resume-printable-area');
-            const fullName = document.getElementById('fullName').value.trim() || "Resume";
+            const fullName = (document.getElementById('fullName').value.trim() || "Resume")
+                .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+                .replace(/\s+/g, '_');
             const opt = {
                 margin:       0,
-                filename:     `${fullName.replace(/\s+/g, '_')}_Resume.pdf`,
+                filename:     `${fullName}_Resume.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+                pagebreak:    { mode: ['css', 'legacy'] }
             };
 
             showToast("Generating PDF download...");
@@ -2174,8 +1115,7 @@
                 showToast("Resume downloaded successfully!");
             }).catch(err => {
                 console.error(err);
-                showToast("Error generating PDF. Trying print dialog...", "error");
-                window.print();
+                showToast("PDF could not be generated. Please try again.", "error");
             });
         }
     </script>
